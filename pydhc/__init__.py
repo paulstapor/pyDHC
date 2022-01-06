@@ -8,6 +8,6 @@ from .version import __version__
 
 from .misc import (
     DhcProblem,
-    DhcProblemValidator,
+    DhcProblemChecker,
     DhcSettings,
 )

@@ -15,21 +15,28 @@ class DhcProblem:
             nParameters: int = None,
     ):
         self.objective_function = objectiveFunction
+
+        self.lowerBounds = None
         if lowerBounds is not None:
             self.lowerBounds = np.array(lowerBounds)
+
+        self.upperBounds = None
         if upperBounds is not None:
             self.upperBounds = np.array(upperBounds)
+
+        self.nParameters = None
         if nParameters is not None:
             self.nParameters = int(nParameters)
-        DhcProblemValidator.check_consistency(self)
+
+        DhcProblemChecker.check_consistency(self)
 
 
-class DhcProblemValidator:
+class DhcProblemChecker:
     @staticmethod
     def check_consistency(dhcProblem):
-        DhcProblemValidator.checkObjectiveFunction(dhcProblem)
-        DhcProblemValidator.checkProblemSize(dhcProblem)
-        DhcProblemValidator.checkConsistencyOfBounds(dhcProblem)
+        DhcProblemChecker.checkObjectiveFunction(dhcProblem)
+        DhcProblemChecker.checkProblemSize(dhcProblem)
+        DhcProblemChecker.checkConsistencyOfBounds(dhcProblem)
 
     @staticmethod
     def checkObjectiveFunction(dhcProblem):
@@ -39,16 +46,16 @@ class DhcProblemValidator:
     @staticmethod
     def checkProblemSize(dhcProblem):
 
-        lowerBoundSet = dhcProblem.lowerBounds is None
-        upperBoundSet = dhcProblem.upperBounds is None
-        noBoundsSet = lowerBoundSet and upperBoundSet
+        lowerBoundSet = dhcProblem.lowerBounds is not None
+        upperBoundSet = dhcProblem.upperBounds is not None
+        noBoundsSet = not lowerBoundSet and not upperBoundSet
 
         if noBoundsSet and dhcProblem.nParameters is None:
             raise AssertionError(
-                "Mary9 can not create a misc without either lower bounds,"
-                "or upper bounds, or a a misc size, i.e., n_parameters."
+                "pyDHC needs at least one element from the following to create an optimization problem:"
+                "lower bounds, upper bounds, number of free parameters."
             )
-        DhcProblemValidator.assertProblemSizeConsistency(
+        DhcProblemChecker.assertProblemSizeConsistency(
             dhcProblem, lowerBoundSet, upperBoundSet
         )
 
@@ -60,7 +67,7 @@ class DhcProblemValidator:
     ):
         if lower_bound_set and upper_bound_set:
             if len(problem.lowerBounds) != len(problem.upperBounds):
-                raise AssertionError("Upper and lower bounds needs to have "
+                raise AssertionError("Upper and lower bounds need to have "
                                      "the same length.")
         elif lower_bound_set:
             problem.upperBounds = np.full(len(problem.lowerBounds), np.inf)
@@ -87,10 +94,11 @@ class DhcProblemValidator:
         ])
 
 
-def checkAndAdaptBoundPerParameter(lowerBounds, upperBounds, iPar):
-    if lowerBounds[iPar] > upperBounds[iPar]:
+def checkAndAdaptBoundPerParameter(lowerBound, upperBound, iPar):
+    if lowerBound > upperBound:
         logger.warning(
             f'Lower bound for parameter index {iPar} greater than upper bound. '
             f'Adjusting upper bound to match lower bound.'
         )
-        upperBounds[iPar] = lowerBounds[iPar]
+        upperBound = lowerBound
+    return upperBound
